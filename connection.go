@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"custom-redis/services"
 	"fmt"
 	"net"
 )
@@ -15,12 +14,12 @@ func handleConnection(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 
 	for scanner.Scan() {
-		response, err := services.HandleMessage(scanner.Text())
+		response, err := HandleMessage(scanner.Text())
 		if err != nil {
 			response = "ERR " + err.Error()
 		}
 
-		_, err = fmt.Fprintln(conn, "Echo: "+response)
+		_, err = fmt.Fprintln(conn, response)
 		if err != nil {
 			fmt.Println("Write error:", err)
 			return

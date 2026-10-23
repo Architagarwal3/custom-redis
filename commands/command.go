@@ -1,8 +1,9 @@
-package services
+package commands
 
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -14,6 +15,10 @@ const (
 	CommandSet    Command = "SET"
 	CommandDel    Command = "DEL"
 	CommandExists Command = "EXISTS"
+	CommandIncr   Command = "INCR"
+	CommandDecr   Command = "DECR"
+	CommandExpire Command = "EXPIRE"
+	CommandTTL    Command = "TTL"
 )
 
 type CommandRequest struct {
@@ -22,7 +27,7 @@ type CommandRequest struct {
 	Value   string
 }
 
-func parseCommand(message string) (CommandRequest, error) {
+func ParseCommand(message string) (CommandRequest, error) {
 	parts := strings.Fields(message)
 	if len(parts) == 0 {
 		return CommandRequest{}, errors.New("empty message")
@@ -37,7 +42,7 @@ func parseCommand(message string) (CommandRequest, error) {
 		}
 		return CommandRequest{Command: command}, nil
 
-	case CommandGet, CommandDel, CommandExists:
+	case CommandGet, CommandDel, CommandExists, CommandIncr, CommandDecr, CommandTTL:
 		if len(parts) != 2 {
 			return CommandRequest{}, fmt.Errorf("%s requires one key", command)
 		}
@@ -45,8 +50,24 @@ func parseCommand(message string) (CommandRequest, error) {
 
 	case CommandSet:
 		if len(parts) != 3 {
-			return CommandRequest{}, errors.New("SET requires a key and a value")
+			return CommandRequest{}, fmt.Errorf("%s requires a key and a value", command)
 		}
+		return CommandRequest{
+			Command: command,
+			Key:     parts[1],
+			Value:   parts[2],
+		}, nil
+
+	case CommandExpire:
+		if len(parts) != 3 {
+			return CommandRequest{}, fmt.Errorf("%s requires a key and a value", command)
+		}
+
+		_, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return CommandRequest{}, fmt.Errorf("invalid expiration time: %s", parts[2])
+		}
+
 		return CommandRequest{
 			Command: command,
 			Key:     parts[1],
